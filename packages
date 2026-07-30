@@ -1,0 +1,41 @@
+/**
+ * Mutator used by generated client hooks.
+ * - Uses import.meta.env.VITE_API_URL as base
+ * - Accepts optional headers (e.g., Authorization)
+ * - Returns parsed JSON or undefined for empty responses
+ */
+
+type OrvalConfig = {
+  url: string;
+  method: string;
+  body?: any;
+  headers?: Record<string, string>;
+};
+
+export async function mutator(config: OrvalConfig, options?: { headers?: Record<string, string> }) {
+  const base = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
+  const url = config.url.startsWith("http") ? config.url : `${base}${config.url}`;
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(config.headers ?? {}),
+    ...(options?.headers ?? {}),
+  };
+
+  const res = await fetch(url, {
+    method: config.method,
+    headers,
+    body: config.body != null ? JSON.stringify(config.body) : undefined,
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Request failed: ${res.status} ${res.statusText} - ${text}`);
+  }
+
+  const contentType = res.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) return undefined;
+  return res.json();
+}
+
+export default mutator;
