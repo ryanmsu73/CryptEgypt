@@ -1,0 +1,34 @@
+// Generated-like: Creator tag
+import { useQuery } from "@tanstack/react-query";
+import { mutator } from "./mutator";
+
+export type Creator = {
+  id: string;
+  name: string;
+  description?: string;
+};
+
+export const getGetCreatorQueryKey = (id?: string) => ["getCreator", id];
+
+async function fetchCreator(id: string) {
+  const data = await mutator({ url: `/creators/${encodeURIComponent(id)}`, method: "GET" });
+  return data as Creator;
+}
+
+/**
+ * useGetCreator(id, { query: { enabled, queryKey } })
+ * - Returns { data, isLoading, isError }
+ */
+export function useGetCreator(id?: string, options?: { query?: { enabled?: boolean; queryKey?: any[] } }) {
+  const enabled = options?.query?.enabled ?? true;
+  const queryKey = options?.query?.queryKey ?? getGetCreatorQueryKey(id);
+  const q = useQuery({
+    queryKey,
+    queryFn: async () => {
+      if (!id) throw new Error("id required");
+      return fetchCreator(id);
+    },
+    enabled: enabled && !!id,
+  });
+  return { data: q.data as Creator | undefined, isLoading: q.isLoading, isError: q.isError, ...q };
+}
